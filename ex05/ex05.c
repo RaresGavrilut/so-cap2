@@ -20,7 +20,60 @@
 
 int main(int argc, char *argv[])
 {
-    /* Scrieti solutia aici */
+    const char *nume = (argc >= 2) ? argv[1] : "test.tst";
+
+    int fd = _open(nume, _O_RDWR | _O_BINARY);
+    if (fd == -1)
+    {
+        printf("Nu pot deschide fisierul %s!\n", nume);
+        return 1;
+    }
+
+    long eof_initial = _lseek(fd, 0, SEEK_END);
+    _lseek(fd, 0, SEEK_SET);
+
+    char buf[256];
+    char cifre[16];
+    int nr_cifre = 0;
+    long cititi = 0;
+
+    while (cititi < eof_initial)
+    {
+        int de_citit = sizeof(buf);
+        if (eof_initial - cititi < de_citit)
+            de_citit = (int)(eof_initial - cititi);
+
+        int n = _read(fd, buf, de_citit);
+        if (n <= 0)
+            break;
+
+        cititi += n;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (buf[i] >= '0' && buf[i] <= '9')
+            {
+                cifre[nr_cifre++] = buf[i];
+
+                if (nr_cifre == sizeof(cifre))
+                {
+                    long poz_curenta = _lseek(fd, 0, SEEK_CUR);
+                    _lseek(fd, 0, SEEK_END);
+                    _write(fd, cifre, nr_cifre);
+                    _lseek(fd, poz_curenta, SEEK_SET);
+                    nr_cifre = 0;
+                }
+            }
+        }
+    }
+
+    if (nr_cifre > 0)
+    {
+        _lseek(fd, 0, SEEK_END);
+        _write(fd, cifre, nr_cifre);
+    }
+
+    _close(fd);
 
     return 0;
 }
